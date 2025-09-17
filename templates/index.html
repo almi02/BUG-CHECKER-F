@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web App Bug Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .check-card { margin-bottom: 20px; }
+        .results { margin-top: 20px; }
+        .loading { display: none; }
+        .bug-item { 
+            border: 1px solid #ddd; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border-left: 4px solid #6c757d;
+        }
+        .bug-critical { border-left-color: #dc3545; }
+        .bug-warning { border-left-color: #ffc107; }
+        .bug-info { border-left-color: #0dcaf0; }
+        .bug-success { border-left-color: #198754; }
+        .severity-badge { font-size: 0.75rem; }
+        .check-section { margin-bottom: 30px; }
+        .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .progress-container { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">🐛 Web App Bug Checker</h1>
+        <p class="text-center text-muted">Analyze websites for bugs, performance issues, and accessibility problems</p>
+
+        <!-- Bug Check Form -->
+        <div class="card check-card">
+            <div class="card-header">
+                <h3><i class="bi bi-search"></i> Website Bug Analysis</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="url-input" class="form-label">Website URL to Check</label>
+                    <input type="url" class="form-control" id="url-input" placeholder="https://example.com">
+                    <div class="form-text">Enter the full URL of the website you want to analyze for bugs</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Check Types</label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="check-html" checked>
+                                <label class="form-check-label" for="check-html">
+                                    <i class="bi bi-code-slash"></i> HTML Validation
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="check-links" checked>
+                                <label class="form-check-label" for="check-links">
+                                    <i class="bi bi-link-45deg"></i> Broken Links
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="check-performance" checked>
+                                <label class="form-check-label" for="check-performance">
+                                    <i class="bi bi-speedometer2"></i> Performance Issues
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="check-accessibility" checked>
+                                <label class="form-check-label" for="check-accessibility">
+                                    <i class="bi bi-universal-access"></i> Accessibility
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="check-seo" checked>
+                                <label class="form-check-label" for="check-seo">
+                                    <i class="bi bi-graph-up"></i> SEO & Metadata
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="check-javascript" checked>
+                                <label class="form-check-label" for="check-javascript">
+                                    <i class="bi bi-bug"></i> JavaScript Errors
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-danger btn-lg" onclick="checkForBugs()">
+                    <span class="spinner-border spinner-border-sm loading" role="status"></span>
+                    <i class="bi bi-bug-fill"></i> Check for Bugs
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container" id="progress-container" style="display: none;">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Analysis in Progress...</h5>
+                    <div class="progress mb-2">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="progress-text">Starting analysis...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="results" style="display: none;">
+            <!-- Summary Card -->
+            <div class="card summary-card mb-4">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 id="total-issues">0</h3>
+                            <p class="mb-0">Total Issues</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="critical-issues" class="text-danger">0</h3>
+                            <p class="mb-0">Critical</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="warning-issues" class="text-warning">0</h3>
+                            <p class="mb-0">Warnings</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="info-issues" class="text-info">0</h3>
+                            <p class="mb-0">Info</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Results -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="bi bi-list-check"></i> Bug Analysis Report</h4>
+                    <div>
+                        <button class="btn btn-outline-light btn-sm" onclick="exportBugReport('json')">
+                            <i class="bi bi-download"></i> Export JSON
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" onclick="exportBugReport('pdf')">
+                            <i class="bi bi-file-pdf"></i> Export PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="results-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Status -->
+        <div id="export-status" class="alert" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentBugReport = null;
+
+        function showLoading(button) {
+            const spinner = button.querySelector('.loading');
+            spinner.style.display = 'inline-block';
+            button.disabled = true;
+        }
+
+        function hideLoading(button) {
+            const spinner = button.querySelector('.loading');
+            spinner.style.display = 'none';
+            button.disabled = false;
+        }
+
+        function showProgress(text, percentage) {
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            
+            progressContainer.style.display = 'block';
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = text;
+        }
+
+        function hideProgress() {
+            const progressContainer = document.getElementById('progress-container');
+            progressContainer.style.display = 'none';
+        }
+
+        async function checkForBugs() {
+            const button = event.target;
+            const url = document.getElementById('url-input').value;
+
+            if (!url) {
+                alert('Please enter a URL to check');
+                return;
+            }
+
+            // Get selected check types
+            const checkTypes = {
+                html: document.getElementById('check-html').checked,
+                links: document.getElementById('check-links').checked,
+                performance: document.getElementById('check-performance').checked,
+                accessibility: document.getElementById('check-accessibility').checked,
+                seo: document.getElementById('check-seo').checked,
+                javascript: document.getElementById('check-javascript').checked
+            };
+
+            if (!Object.values(checkTypes).some(checked => checked)) {
+                alert('Please select at least one check type');
+                return;
+            }
+
+            showLoading(button);
+            showProgress('Starting bug analysis...', 10);
+
+            try {
+                const response = await fetch('/check-bugs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: url,
+                        check_types: checkTypes
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    currentBugReport = result.data;
+                    displayBugReport(result.data);
+                    showProgress('Analysis completed!', 100);
+                    setTimeout(hideProgress, 2000);
+                } else {
+                    alert('Error: ' + result.error);
+                    hideProgress();
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+                hideProgress();
+            } finally {
+                hideLoading(button);
+            }
+        }
+
+        function displayBugReport(report) {
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('results-content');
+            
+            // Update summary
+            document.getElementById('total-issues').textContent = report.summary.total;
+            document.getElementById('critical-issues').textContent = report.summary.critical;
+            document.getElementById('warning-issues').textContent = report.summary.warnings;
+            document.getElementById('info-issues').textContent = report.summary.info;
+            
+            let html = '';
+
+            // Group bugs by category
+            Object.keys(report.categories).forEach(category => {
+                const bugs = report.categories[category];
+                if (bugs.length > 0) {
+                    html += `<div class="check-section">
+                        <h5><i class="bi bi-${getCategoryIcon(category)}"></i> ${getCategoryTitle(category)}</h5>`;
+                    
+                    bugs.forEach(bug => {
+                        html += `<div class="bug-item ${getBugClass(bug.severity)}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${bug.title}</h6>
+                                    <p class="mb-2">${bug.description}</p>
+                                    ${bug.location ? `<small class="text-muted">Location: ${bug.location}</small>` : ''}
+                                </div>
+                                <span class="badge bg-${getSeverityColor(bug.severity)} severity-badge">${bug.severity.toUpperCase()}</span>
+                            </div>
+                            ${bug.suggestion ? `<div class="mt-2"><strong>Fix:</strong> ${bug.suggestion}</div>` : ''}
+                        </div>`;
+                    });
+                    
+                    html += '</div>';
+                }
+            });
+
+            if (html === '') {
+                html = '<div class="text-center py-4"><i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i><h4 class="mt-3">No Issues Found!</h4><p class="text-muted">Your website passed all selected checks.</p></div>';
+            }
+
+            contentDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        function getCategoryIcon(category) {
+            const icons = {
+                html: 'code-slash',
+                links: 'link-45deg',
+                performance: 'speedometer2',
+                accessibility: 'universal-access',
+                seo: 'graph-up',
+                javascript: 'bug'
+            };
+            return icons[category] || 'exclamation-circle';
+        }
+
+        function getCategoryTitle(category) {
+            const titles = {
+                html: 'HTML Validation',
+                links: 'Link Checker',
+                performance: 'Performance Analysis',
+                accessibility: 'Accessibility',
+                seo: 'SEO & Metadata',
+                javascript: 'JavaScript Issues'
+            };
+            return titles[category] || category;
+        }
+
+        function getBugClass(severity) {
+            return `bug-${severity}`;
+        }
+
+        function getSeverityColor(severity) {
+            const colors = {
+                critical: 'danger',
+                warning: 'warning',
+                info: 'info',
+                success: 'success'
+            };
+            return colors[severity] || 'secondary';
+        }
+
+        async function exportBugReport(format) {
+            if (!currentBugReport) {
+                alert('No bug report to export');
+                return;
+            }
+
+            try {
+                const response = await fetch('/export-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        report: currentBugReport,
+                        format: format
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showExportStatus(`Bug report exported successfully: ${result.filepath}`, 'success');
+                } else {
+                    showExportStatus('Export error: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                showExportStatus('Network error: ' + error.message, 'danger');
+            }
+        }
+
+        function showExportStatus(message, type) {
+            const statusDiv = document.getElementById('export-status');
+            statusDiv.className = `alert alert-${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
